@@ -1,0 +1,123 @@
+body {
+  margin: 0;
+  font: 12px "Microsoft Sans Serif", Arial;
+}
+.wt-wrap {
+  --btn-color: #1890ff;
+  --sp-width: 88px;
+  @default-color: #B8B8B8;
+  @cp-bg: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==';
+  margin: 0 auto;
+  padding: 10px;
+  width: 100%;
+  //width: max-content;
+  box-sizing: border-box;
+  .auto-wrap {
+    width: 100%;
+    //width: max-content;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  .wt-btns {
+    width: 100%;
+  }
+  .wt-btn {
+    margin-top: 5px;
+    margin-right: 5px;
+    padding: 4px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #fff;
+    background-color: var(--btn-color);
+    outline: none;
+  }
+
+  .inp-text {
+    outline: none;
+    line-height: 22px;
+  }
+  .tips {
+    color: #868585;
+    font-size: 12px;
+  }
+
+  .wt-handle-wrap {
+    margin-top: 20px;
+    font-size: 14px;
+    > div {
+      margin-top: 15px;
+      > span {
+        display: inline-block;
+        min-width: var(--sp-width);
+      }
+      > input {
+        margin-right: 15px;
+      }
+    }
+    .last-handle {
+      display: flex;
+      flex-wrap: wrap;
+      > div {
+        > span {
+          display: inline-block;
+          min-width: var(--sp-width);
+          margin-top: 10px;
+        }
+        > input {
+          margin-right: 15px;
+        }
+      }
+    }
+
+    .ap-wrap {
+      display: flex;
+      margin-top: 15px;
+      .text {
+        min-width: var(--sp-width);
+      }
+      .color-wrap {
+        width: 100%;
+        height: 16px;
+        max-width: 300px;
+        background: url(@cp-bg) repeat;
+        //linear-gradient(to right, rgba(55, 214, 122, 0) 0%, rgb(55, 214, 122) 100%)
+      }
+      .linear-bg {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        background: linear-gradient(to right, rgba(55, 214, 122, 0) 0%, @default-color 100%);
+      }
+
+      .point {
+        //position: relative;
+        position: absolute;
+        left: 0;
+        height: 18px;
+        width: 18px;
+        background: rgb(248, 248, 248);
+        border-radius: 50%;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.37);
+        transform: translate(0, -2px);
+        cursor: pointer;
+      }
+    }
+  }
+
+  .canvas-wrap {
+    width: 100%;
+    padding: 20px;
+    > canvas {
+      width: 100%;
+    }
+  }
+}
+
+.box {
+  width: 200px;
+  height: 200px;
+  background-color: #1890ff;
+  position: absolute;
+  left: 80px;
+}
+

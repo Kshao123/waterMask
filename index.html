@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<link rel="stylesheet" href="walterMask.css">
+<body>
+<section class="wt-wrap">
+  <div>
+    <div class="wt-btns auto-wrap">
+      <button class="wt-btn" id="upload-btn">上传图片</button>
+      <button id="rotate-btn" class="wt-btn">旋转</button>
+      <button id="save-btn" class="wt-btn">保存</button>
+    </div>
+
+    <div class="wt-handle-wrap auto-wrap">
+      <div class="wt-text">
+        <span>水印文案：</span>
+        <input style="min-width: 150px" id="water-value" class="inp-text" type="text">
+      </div>
+
+      <div>
+        <span>字体颜色：</span>
+        <input id="wt-color" type="color">
+        <input style="border: 2px solid #bbb; border-radius: 2px;" id="wt-color-text" type="text" value="#B8B8B8">
+        <span class="tips">* 仅支持 16进制颜色输入</span>
+      </div>
+
+      <div class="ap-wrap" style="user-select: none">
+        <div class="text">
+          <span>透明度：</span>
+        </div>
+        <div class="color-wrap">
+          <div class="linear-bg" id="p-wrap">
+            <div id="point" class="point"></div>
+          </div>
+        </div>
+        <span id="alpha-value" style="margin-left: 20px" class="tips">80%</span>
+      </div>
+
+      <div class="last-handle">
+        <div>
+          <span>字体大小：</span>
+          <input id="fontsize-val" class="inp-text" type="number">
+        </div>
+
+        <div>
+          <span>字体角度：</span>
+          <input id="size-rotate" class="inp-text" type="number">
+        </div>
+
+        <div>
+          <span>水印框宽：</span>
+          <input id="water-box-width" class="inp-text" type="number">
+        </div>
+
+        <div>
+          <span>水印框高：</span>
+          <input id="water-box-height" class="inp-text" type="number">
+        </div>
+      </div>
+    </div>
+
+    <div id="canvas-wrap" class="auto-wrap canvas-wrap">
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+</section>
+
+</body>
+<script>
+  const color = document.getElementById('wt-color');
+  const defaultTextColor = '#B8B8B8';
+  const uploadBtn = document.getElementById('upload-btn');
+  let imgSource = null;
+
+  const setAttr = (el, attr, value) => {
+    el.setAttribute(attr, value);
+  }
+
+  const setColor = (value) => {
+    setAttr(color, 'value', value || defaultTextColor)
+  }
+
+  const _throttle = function (fn, delay = 100, immed = true) {
+    let timer;
+    return function (...reset) {
+      const _this = this;
+      if (immed) {
+        fn.apply(_this, reset);
+        immed = false;
+      }
+      if (!timer) {
+        timer = setTimeout(function () {
+          fn.apply(_this, reset);
+          timer = null;
+        }, delay)
+      }
+    }
+  }
+
+  const MovePoint = function ({ el, onMove }) {
+    this.el = el;
+    let transform = '';
+    const transformArr = ['transfrom', 'webkitTransform', 'MozTransform', 'msTransform', 'OTransform'];
+
+    const diffPos = {
+      x: 0,
+      cx: 0
+    }
+
+    const checkClient = e => {
+      if (e.touches && e.touches.length) {
+        return e.touches[0]
+      }
+      return e;
+    }
+
+    const onmousedown = e => {
+      const event = checkClient(e);
+      const pRect = this.parentEl.getBoundingClientRect();
+      this.pElMaxX = pRect.width;
+      const cRect = el.getBoundingClientRect();
+      this.width = cRect.width;
+      diffPos.x = pRect.left;
+      diffPos.cx = event.clientX - cRect.left;
+      document.addEventListener('mousemove', onmousemove);
+      document.addEventListener('touchmove', onmousemove);
+      document.addEventListener('mouseup', onmouseup);
+      document.addEventListener('touchend', onmouseup);
+    }
+
+    const onmousemove = e => {
+      const event = checkClient(e);
+      const x = event.clientX - diffPos.x - diffPos.cx;
+      const dx = this.width / 2
+      const diffX = Math.max(0 - dx, Math.min(x, this.pElMaxX - dx));
+      if (transform) {
+        el.style.transform = `translate(${diffX}px, -2px)`;
+      } else el.style.left = `${x}px`;
+      onMove && onMove(diffX, (diffX + dx) / this.parentEl.clientWidth);
+    }
+
+    const onmouseup = function (e) {
+      document.removeEventListener('mousemove', onmousemove)
+      document.removeEventListener('touchmove', onmousemove)
+    }
+
+    const checkCssTrans = function () {
+      if (!el) return;
+      for (const attr of transformArr) {
+        if (attr in el.style) {
+          transform = attr;
+        }
+      }
+    }
+
+    const movePoint = () => {
+      const centerPos = (this.parentEl.clientWidth - (+getComputedStyle(this.el).width.replace('px', '') / 2)) * 0.8;
+      if (transform) {
+        el.style.transform = `translate(${centerPos}px, -2px)`
+      } el.left = `${centerPos}px`
+    }
+
+    this.init = function () {
+      this.parentEl = el.parentNode;
+      checkCssTrans();
+      movePoint()
+      el.addEventListener('mousedown', onmousedown.bind(this));
+      el.addEventListener('touchstart', onmousedown.bind(this));
+    }
+  };
+
+  setColor();
+
+  let imgInfo = {
+    type: undefined,
+    size: 0,
+    name: undefined
+  }
+
+  class WaterMarker {
+    static DEFAULT_OPTIONS = {
+      text: '仅用于当前业务，他用无效',
+      fontSize: 23,
+      fontColor: 'rgba(184,184,184,0.8)',
+      waterMaskWidth: 280, // 水印盒子的宽
+      waterMaskHeight: 180,
+      canvasWrap: null,
+      sizeRotate: 20,
+    }
+
+    constructor(props) {
+      const {
+        canvasEl,
+        option,
+      } = props;
+      this.options = Object.assign({}, WaterMarker.DEFAULT_OPTIONS, option);
+      this.canvas = canvasEl;
+      this.context = canvasEl.getContext('2d');
+      this.rotate = option.rotate || 0;
+      this.oldRotate = this.maxWidth = undefined;
+      this.image = null;
+      this.waterMaskCanvas = document.createElement('canvas');
+      this.createWaterMaskCanvas();
+      this.drawImg('https://wxt.sinaimg.cn/mw690/0085UwQ9ly1gd7m9ms7kyj30ia0ujq4y.jpg')
+    }
+
+    loadImg2canvas = url => new Promise(resolve => {
+      if (!url && !this.image) return;
+      if (this.image && !url) return resolve(this.image)
+      const image = this.image = new Image();
+      image.src = url;
+      image.onload = () => resolve(image);
+    })
+
+    drawImg = async (url, rotate) => {
+      // 此处未对跨域 url 做处理
+      const image = await this.loadImg2canvas(url);
+      const context = this.context;
+      const { canvasWrap } = this.options;
+      let maxWidth = 0;
+      if (canvasWrap) {
+        if (document.body.clientWidth > 768) {
+          canvasWrap.style.width = image.width + 'px';
+        }
+        if (this.rotate !== this.oldRotate) {
+          this.oldRotate = this.rotate;
+          this.maxWidth = maxWidth = parseFloat(getComputedStyle(canvasWrap).width);
+        } else if (this.maxWidth) {
+          maxWidth = this.maxWidth;
+        }
+      }
+
+      this.width = image.width;
+      this.height = image.height;
+
+      if (this.width > maxWidth) {
+        this.width = maxWidth;
+        this.height = maxWidth * image.height / image.width;
+      }
+
+      context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      // 处理旋转
+      this.rotate = rotate = rotate || this.rotate;
+      if (rotate > 3) this.rotate = rotate %= 4;
+
+      switch (rotate) {
+        default:
+        case 0 :
+          this.canvas.width = this.width;
+          this.canvas.height = this.height;
+          context.drawImage(image, 0, 0, this.width, this.height)
+          break;
+
+        // 顺时针 90deg
+        case 1:
+          this.canvas.width = this.height;
+          this.canvas.height = this.width;
+          context.save();
+          context.rotate(90 * Math.PI / 180);
+          context.drawImage(image, 0, -this.height, this.width, this.height);
+          context.restore();
+          break;
+
+        // 顺时针 180deg
+        case 2:
+          this.canvas.width = this.width;
+          this.canvas.height = this.height;
+          context.save();
+          context.rotate(180 * Math.PI / 180);
+          context.drawImage(image, -this.width, -this.height, this.width, this.height);
+          context.restore();
+          break;
+
+        // 顺时针 270deg
+        case 3:
+          this.canvas.width = this.height;
+          this.canvas.height = this.width;
+          context.save();
+          context.rotate(270 * Math.PI / 180);
+          context.drawImage(image, -this.width, 0, this.width, this.height);
+          context.restore();
+          break;
+      }
+      this.addWaterMask();
+    }
+
+    addWaterMask = () => {
+      const context = this.context;
+      context.fillStyle = context.createPattern(this.waterMaskCanvas, 'repeat');
+      context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    draw = (url, rotate) => {
+      this.drawImg(url, rotate);
+    }
+
+    createWaterMaskCanvas = () => {
+      let {
+        text,
+        fontSize = 12,
+        fontColor,
+        waterMaskWidth = 280,
+        waterMaskHeight = 180,
+        sizeRotate = 20,
+      } = this.options;
+
+      if (fontSize <= 0) fontSize = 12;
+      if (waterMaskWidth <= 0) waterMaskWidth = 280;
+      if (waterMaskHeight <= 0) waterMaskHeight = 180;
+      if (sizeRotate <= 0) sizeRotate = 20;
+
+      const context = this.waterMaskCanvas.getContext('2d');
+      this.waterMaskCanvas.width = Math.sqrt(Math.pow(waterMaskWidth, 2) + Math.pow(waterMaskHeight, 2));
+      this.waterMaskCanvas.height = waterMaskHeight;
+      context.font = `${(fontSize)}px Arial`;
+      context.rotate(-sizeRotate * Math.PI / 180);
+      context.fillStyle = fontColor;
+      const Y = parseInt(Math.sin(sizeRotate * Math.PI / 180) * waterMaskWidth, 10);
+      const X = -parseInt(Y / Math.tan((90 - sizeRotate) * Math.PI / 180), 10);
+      this.autoText(waterMaskWidth, text, X + 10, Y + fontSize + sizeRotate, fontSize * 1.4)
+    }
+
+    autoText = (width, text, x, y, lineHeight) => {
+      let lineWidth = 0;
+      let lastSubStrIndex = 0;
+      let canvasWidth = width;
+      const context = this.waterMaskCanvas.getContext('2d');
+
+      for (let i = 0; i < text.length; i++) {
+        const str = text[i];
+        lineWidth += context.measureText(str).width;
+
+        if (lineWidth > canvasWidth - x) {
+          context.fillText(text.substring(lastSubStrIndex, i), x, y);
+          y += lineHeight;
+          lineWidth = 0;
+          lastSubStrIndex = i;
+        }
+
+        if (i === text.length -1) {
+          context.fillText(text.substring(lastSubStrIndex, i + 1), x, y);
+        }
+      }
+    }
+
+    saveImg = (name, type, width = this.image?.width || this.canvas.width, height = this.image?.height || this.canvas.height) => {
+      if (this.image) {
+        // 对图片比例调整
+        const scaleCanvas = document.createElement('canvas');
+        scaleCanvas.width = this.canvas.width;
+        scaleCanvas.height = this.canvas.height;
+        const ctx = scaleCanvas.getContext('2d');
+        ctx.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height, 0, 0, width, height);
+        const url = scaleCanvas.toDataURL(type || 'image/jpeg');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        a.click();
+      }
+    }
+
+    setOptions = options => {
+      this.options = Object.assign({}, this.options, options || {});
+      this.createWaterMaskCanvas();
+      if (!this.image) return;
+      this.draw();
+    }
+  }
+
+
+  const waterM = new WaterMarker({
+    canvasEl: document.getElementById('canvas'),
+    option: {
+      canvasWrap: document.getElementById('canvas-wrap')
+    }
+  });
+
+  const upload = function (e) {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/*';
+    inp.onchange = function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      imgInfo.type = file.type;
+      imgInfo.name = file.name;
+      imgInfo.size = file.size;
+      const fileReader = new FileReader(file);
+      fileReader.onload = function (e) {
+        console.log('upload change');
+        imgSource = e.target.result;
+        const { canvasWrap, ...options } = waterM.options;
+        waterM.draw(imgSource);
+      }
+      fileReader.readAsDataURL(file)
+    }
+    inp.click();
+  };
+
+  uploadBtn.addEventListener('click', upload);
+
+  // 旋转
+  const rotateBtn = document.getElementById('rotate-btn');
+  let rotate = 0;
+  rotateBtn.addEventListener('click', function () {
+    if (!waterM.image) {
+      return uploadBtn.click();
+    }
+    rotate += 1;
+    waterM.draw(undefined, rotate)
+  });
+
+  // 保存图片
+  const saveCanvas2Img = function () {
+    waterM.saveImg(imgInfo.name, imgInfo.type);
+  }
+
+  const saveBtn = document.getElementById('save-btn');
+  saveBtn.addEventListener('click', saveCanvas2Img);
+
+  const optionsKeymap = {
+    text: {
+      eventName: 'input',
+      attr: 'value',
+      id: 'water-value'
+    },
+    fontSize: {
+      eventName: 'input',
+      attr: 'value',
+      id: 'fontsize-val'
+    },
+    waterMaskWidth: {
+      eventName: 'input',
+      attr: 'value',
+      id: 'water-box-width'
+    },
+    waterMaskHeight: {
+      eventName: 'input',
+      attr: 'value',
+      id: 'water-box-height'
+    },
+    sizeRotate: {
+      eventName: 'input',
+      attr: 'value',
+      id: 'size-rotate'
+    },
+  }
+
+  // 设置水印
+  const key2arr = Object.keys(optionsKeymap);
+  key2arr.forEach(key => {
+    const { eventName, attr, id } = optionsKeymap[key];
+    const el = document.getElementById(id);
+    setAttr(el, attr, waterM.options[key]);
+    el.addEventListener(eventName, _throttle(function (e) {
+      const value = e.target.value;
+      setAttr(el, attr, value);
+      waterM.setOptions({
+        [key]: key!== 'text' ? +value : value
+      })
+    }))
+  });
+
+  const colorRgb = function(str, alpha = 100){
+    var sColor = str.toLowerCase();
+    //十六进制颜色值的正则表达式
+    var reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;
+    // 如果是16进制颜色
+    if (sColor && reg.test(sColor)) {
+      if (sColor.length === 4) {
+        var sColorNew = "#";
+        for (var i=1; i<4; i+=1) {
+          sColorNew += sColor.slice(i, i+1).concat(sColor.slice(i, i+1));
+        }
+        sColor = sColorNew;
+      }
+      //处理六位的颜色值
+      var sColorChange = [];
+      for (var i=1; i<7; i+=2) {
+        sColorChange.push(parseInt("0x"+sColor.slice(i, i+2)));
+      }
+      return "RGBA(" + sColorChange.join(",") + "," + alpha / 100 + ")";
+    }
+    return sColor;
+  };
+
+
+  const colorText = document.getElementById('wt-color-text');
+  const alphaVal = document.getElementById('alpha-value');
+
+  color.addEventListener('change', function (e) {
+    const value = e.target.value;
+    const alpha = alphaVal.innerText.replace(/%/, '');
+    setAttr(colorText, 'value', value);
+    waterM.setOptions({
+      fontColor: colorRgb(value, +alpha)
+    })
+  });
+
+
+  const moveP = new MovePoint({
+    el: document.getElementById('point'),
+    onMove: _throttle(function (x, percent) {
+      const value = +(percent * 100).toFixed(2);
+      const colorVal = colorText.value;
+      alphaVal.innerText = `${value}%`;
+      waterM.setOptions({
+        fontColor: colorRgb(colorVal, value)
+      })
+    })
+  });
+  moveP.init();
+
+
+</script>
+</html>

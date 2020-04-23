@@ -1,0 +1,109 @@
+body {
+  margin: 0;
+  font: 12px "Microsoft Sans Serif", Arial;
+}
+.wt-wrap {
+  --btn-color: #1890ff;
+  --sp-width: 88px;
+  margin: 0 auto;
+  padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.wt-wrap .auto-wrap {
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+.wt-wrap .wt-btns {
+  width: 100%;
+}
+.wt-wrap .wt-btn {
+  margin-top: 5px;
+  margin-right: 5px;
+  padding: 4px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #fff;
+  background-color: var(--btn-color);
+  outline: none;
+}
+.wt-wrap .inp-text {
+  outline: none;
+  line-height: 22px;
+}
+.wt-wrap .tips {
+  color: #868585;
+  font-size: 12px;
+}
+.wt-wrap .wt-handle-wrap {
+  margin-top: 20px;
+  font-size: 14px;
+}
+.wt-wrap .wt-handle-wrap > div {
+  margin-top: 15px;
+}
+.wt-wrap .wt-handle-wrap > div > span {
+  display: inline-block;
+  min-width: var(--sp-width);
+}
+.wt-wrap .wt-handle-wrap > div > input {
+  margin-right: 15px;
+}
+.wt-wrap .wt-handle-wrap .last-handle {
+  display: flex;
+  flex-wrap: wrap;
+}
+.wt-wrap .wt-handle-wrap .last-handle > div > span {
+  display: inline-block;
+  min-width: var(--sp-width);
+  margin-top: 10px;
+}
+.wt-wrap .wt-handle-wrap .last-handle > div > input {
+  margin-right: 15px;
+}
+.wt-wrap .wt-handle-wrap .ap-wrap {
+  display: flex;
+  margin-top: 15px;
+}
+.wt-wrap .wt-handle-wrap .ap-wrap .text {
+  min-width: var(--sp-width);
+}
+.wt-wrap .wt-handle-wrap .ap-wrap .color-wrap {
+  width: 100%;
+  height: 16px;
+  max-width: 300px;
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==') repeat;
+}
+.wt-wrap .wt-handle-wrap .ap-wrap .linear-bg {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: linear-gradient(to right, rgba(55, 214, 122, 0) 0%, #B8B8B8 100%);
+}
+.wt-wrap .wt-handle-wrap .ap-wrap .point {
+  position: absolute;
+  left: 0;
+  height: 18px;
+  width: 18px;
+  background: #f8f8f8;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.37);
+  transform: translate(0, -2px);
+  cursor: pointer;
+}
+.wt-wrap .canvas-wrap {
+  width: 100%;
+  padding: 20px;
+}
+.wt-wrap .canvas-wrap > canvas {
+  width: 100%;
+}
+.box {
+  width: 200px;
+  height: 200px;
+  background-color: #1890ff;
+  position: absolute;
+  left: 80px;
+}
+/*# sourceMappingURL=walterMask.css.map */
