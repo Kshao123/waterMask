@@ -350,8 +350,8 @@
       if (this.image) {
         // 对图片比例调整
         const scaleCanvas = document.createElement('canvas');
-        scaleCanvas.width = this.canvas.width;
-        scaleCanvas.height = this.canvas.height;
+        scaleCanvas.width = width;
+        scaleCanvas.height = height;
         const ctx = scaleCanvas.getContext('2d');
         ctx.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height, 0, 0, width, height);
         const url = scaleCanvas.toDataURL(type || 'image/jpeg');
